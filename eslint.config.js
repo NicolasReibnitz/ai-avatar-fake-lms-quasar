@@ -1,83 +1,72 @@
-import js from '@eslint/js';
-import globals from 'globals';
-import pluginVue from 'eslint-plugin-vue';
+import eslint from '@eslint/js';
 import pluginQuasar from '@quasar/app-vite/eslint';
-import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript';
 import prettierSkipFormatting from '@vue/eslint-config-prettier/skip-formatting';
+import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript';
+import * as importX from 'eslint-plugin-import-x';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import eslintPluginVue from 'eslint-plugin-vue';
+import globals from 'globals';
+import typescriptEslint from 'typescript-eslint';
 
 export default defineConfigWithVueTs(
-  {
-    /**
-     * Ignore the following files.
-     * Please note that pluginQuasar.configs.recommended() already ignores
-     * the "node_modules" folder for you (and all other Quasar project
-     * relevant folders and files).
-     *
-     * ESLint requires "ignores" key to be the only one in this object
-     */
-    // ignores: []
-  },
-
-  pluginQuasar.configs.recommended(),
-  js.configs.recommended,
-
-  /**
-   * https://eslint.vuejs.org
-   *
-   * pluginVue.configs.base
-   *   -> Settings and rules to enable correct ESLint parsing.
-   * pluginVue.configs[ 'flat/essential']
-   *   -> base, plus rules to prevent errors or unintended behavior.
-   * pluginVue.configs["flat/strongly-recommended"]
-   *   -> Above, plus rules to considerably improve code readability and/or dev experience.
-   * pluginVue.configs["flat/recommended"]
-   *   -> Above, plus rules to enforce subjective community defaults to ensure consistency.
-   */
-  pluginVue.configs['flat/essential'],
-
-  {
-    files: ['**/*.ts', '**/*.vue'],
-    rules: {
-      '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
-    },
-  },
-  // https://github.com/vuejs/eslint-config-typescript
-  vueTsConfigs.recommendedTypeChecked,
-
-  {
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-
-      globals: {
-        ...globals.browser,
-        ...globals.node, // SSR, Electron, config files
-        process: 'readonly', // process.env.*
-        ga: 'readonly', // Google Analytics
-        cordova: 'readonly',
-        Capacitor: 'readonly',
-        chrome: 'readonly', // BEX related
-        browser: 'readonly', // BEX related
-      },
-    },
-
-    // add your custom rules here
-    rules: {
-      'prefer-promise-reject-errors': 'off',
-
-      // allow debugger during development only
-      'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
-    },
-  },
-
-  {
-    files: ['src-pwa/custom-service-worker.ts'],
-    languageOptions: {
-      globals: {
-        ...globals.serviceworker,
-      },
-    },
-  },
-
-  prettierSkipFormatting,
+	importX.flatConfigs.recommended,
+	importX.flatConfigs.typescript,
+	{
+		name: 'ignores',
+		ignores: ['*.d.ts', '**/coverage', '**/dist', 'src/types/supabase.ts']
+	},
+	{
+		name: 'gnurgh',
+		extends: [
+			pluginQuasar.configs.recommended(),
+			eslint.configs.recommended,
+			...typescriptEslint.configs.recommended,
+			...eslintPluginVue.configs['flat/recommended']
+		],
+		files: ['**/*.{ts,vue}'],
+		languageOptions: {
+			ecmaVersion: 'latest',
+			sourceType: 'module',
+			globals: {
+				...globals.browser,
+				'#imports': 'readonly'
+			},
+			parser: eslintPluginVue.parser,
+			parserOptions: {
+				parser: typescriptEslint.parser,
+				project: ['./tsconfig.json'],
+				extraFileExtensions: ['.vue'],
+				tsconfigRootDir: import.meta.dirname
+			}
+		}
+	},
+	{
+		name: 'simple-import-sort',
+		plugins: {
+			'simple-import-sort': simpleImportSort
+		},
+		rules: {
+			'simple-import-sort/imports': 'error',
+			'simple-import-sort/exports': 'error'
+		}
+	},
+	{
+		name: 'interactive/rules/import-x',
+		rules: {
+			'import-x/no-named-as-default-member': 'off',
+			'import-x/first': 'error',
+			'import-x/newline-after-import': 'error',
+			'import-x/no-duplicates': 'error',
+			'import-x/no-unresolved': 'off'
+		}
+	},
+	vueTsConfigs.recommendedTypeChecked,
+	{
+		name: 'typescript-eslint',
+		rules: {
+			'no-unused-vars': 'off',
+			'@typescript-eslint/no-unused-vars': 'off'
+		}
+	},
+	prettierSkipFormatting
 );
